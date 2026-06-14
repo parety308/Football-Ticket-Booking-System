@@ -5,59 +5,69 @@
 --               actual data types, relational keys, and check criteria.
 -- =========================================================================
 
--- DROP TABLES IF THEY ALREADY EXIST TO PREVENT CONFLICTS
-DROP TABLE IF EXISTS Bookings;
-DROP TABLE IF EXISTS Matches;
-DROP TABLE IF EXISTS Users;
 
 -- =========================================================================
 -- 1. CREATE USERS TABLE
 -- =========================================================================
-CREATE TABLE Users (
-    user_id TYPE,
-    full_name TYPE,
-    email TYPE,
-    role TYPE,
-    phone_number TYPE,
-    
-    -- Write your constraint to make 'user_id' the Primary Key
-    -- Write your constraint to ensure 'email' values are never duplicated
-    -- Write your check constraint to restrict 'role' to specific allowed strings
+CREATE TABLE IF NOT EXISTS Users (
+    user_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role VARCHAR(20) NOT NULL
+        CHECK (role IN ('Ticket Manager', 'Football Fan')),
+    phone_number VARCHAR(15)
+
+    -- 'user_id' is the Primary Key
+    -- 'email' values are UNIQUE
+    -- 'role' is restricted to allowed strings
 );
 
 -- =========================================================================
 -- 2. CREATE MATCHES TABLE
 -- =========================================================================
-CREATE TABLE Matches (
-    match_id TYPE,
-    fixture TYPE,
-    tournament_category TYPE,
-    base_ticket_price TYPE,
-    match_status TYPE,
-    
-    -- Write your constraint to make 'match_id' the Primary Key
-    -- Write your check constraint to prevent negative ticket prices
-    -- Write your check constraint to restrict 'match_status' values
+CREATE TABLE IF NOT EXISTS Matches (
+    match_id SERIAL PRIMARY KEY,
+    fixture VARCHAR(100) NOT NULL,
+    tournament_category VARCHAR(100) NOT NULL,
+    base_ticket_price INT NOT NULL
+        CHECK (base_ticket_price > 0),
+    match_status VARCHAR(20) NOT NULL
+        CHECK (match_status IN (
+            'Available',
+            'Selling Fast',
+            'Sold Out',
+            'Postponed'
+        ))
+
+    -- 'match_id' is the Primary Key
+    -- 'base_ticket_price' must be greater than 0
+    -- 'match_status' is restricted to allowed values
 );
 
 -- =========================================================================
 -- 3. CREATE BOOKINGS TABLE
 -- =========================================================================
 CREATE TABLE Bookings (
-    booking_id TYPE,
-    user_id TYPE,
-    match_id TYPE,
-    seat_number TYPE,
-    payment_status TYPE,
-    total_cost TYPE,
-    
-    -- Write your constraint to make 'booking_id' the Primary Key
-    -- Write your Foreign Key constraint linking 'user_id' to the Users table
-    -- Write your Foreign Key constraint linking 'match_id' to the Matches table
-    -- Write your check constraint to ensure 'total_cost' is non-negative
-    -- Write your check constraint to restrict 'payment_status' values
-);
+    booking_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id),
+    match_id INT REFERENCES Matches(match_id),
+    seat_number VARCHAR(10) NOT NULL,
+    payment_status VARCHAR(20) NOT NULL
+        CHECK (payment_status IN (
+            'Pending',
+            'Confirmed',
+            'Cancelled',
+            'Refunded'
+        )),
+    total_cost DECIMAL(10,2)
+        CHECK (total_cost >= 0)
 
+    -- 'booking_id' is the Primary Key
+    -- 'user_id' is a Foreign Key referencing Users(user_id)
+    -- 'match_id' is a Foreign Key referencing Matches(match_id)
+    -- 'total_cost' must be non-negative
+    -- 'payment_status' is restricted to allowed values
+);
 
 -- =========================================================================
 -- DATA SEEDING: INSERT SAMPLE DATA INTO USERS
@@ -87,3 +97,4 @@ INSERT INTO Bookings (booking_id, user_id, match_id, seat_number, payment_status
 (503, 2, 101, 'A-13', 'Confirmed', 150.00),
 (504, 2, 101, NULL, NULL, 150.00),
 (505, 3, 102, 'C-20', 'Pending', 120.00);
+
